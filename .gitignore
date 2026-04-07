@@ -1,0 +1,13 @@
+# Chrome extension generated cache (not source code)
+_metadata/
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# VS Code
+.vscode/
+
+# Node (if ever added)
+node_modules/

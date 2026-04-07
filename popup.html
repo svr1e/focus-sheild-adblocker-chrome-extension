@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FocusShield</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ── HEADER ─────────────────────────────────────────── -->
+  <header class="header">
+    <div class="logo">
+      <span class="logo-icon">🛡️</span>
+      <span class="logo-text">FocusShield</span>
+    </div>
+    <div id="phaseBadge" class="phase-badge badge-idle">● IDLE</div>
+  </header>
+
+  <!-- ── STATS BAR ──────────────────────────────────────── -->
+  <div class="stats-bar">
+    <div class="stat-item">
+      <span class="stat-icon">🔥</span>
+      <span class="stat-value" id="statStreak">0</span>
+      <span class="stat-label">Streak</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-icon">⚠️</span>
+      <span class="stat-value" id="statBypasses">0</span>
+      <span class="stat-label">Bypasses</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-icon">✅</span>
+      <span class="stat-value" id="statSessions">0</span>
+      <span class="stat-label">Sessions</span>
+    </div>
+  </div>
+
+  <!-- ── MAIN PANEL (switches by phase) ────────────────── -->
+
+  <!-- IDLE VIEW -->
+  <div id="view-idle" class="phase-view">
+    <div class="view-icon">🎯</div>
+    <h2 class="view-title">Ready to Focus</h2>
+    <p class="view-sub">Configure your session below, then start.</p>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="inpDuration">Session</label>
+        <div class="input-unit">
+          <input type="number" id="inpDuration" min="1" max="480" value="30" />
+          <span class="unit">min</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="inpCooldown">Cooldown</label>
+        <div class="input-unit">
+          <input type="number" id="inpCooldown" min="1" max="240" value="15" />
+          <span class="unit">min</span>
+        </div>
+      </div>
+    </div>
+
+    <label class="strict-option" for="chkStrict">
+      <input type="checkbox" id="chkStrict" />
+      <div class="strict-box">
+        <span class="strict-icon">🔒</span>
+        <div class="strict-text">
+          <strong>Strict Mode</strong>
+          <span>Session cannot be stopped early</span>
+        </div>
+      </div>
+    </label>
+
+    <button id="btnStart" class="btn btn-primary">
+      ▶ &nbsp;Start Focus Session
+    </button>
+    <p id="idleError" class="error-msg hidden"></p>
+  </div>
+
+  <!-- SESSION VIEW -->
+  <div id="view-session" class="phase-view hidden">
+    <div class="session-top">
+      <span class="phase-label-sm">🎯 Session Active</span>
+      <span id="strictBadge" class="strict-badge hidden">🔒 STRICT</span>
+    </div>
+    <div class="big-timer" id="sessionTimer">--:--</div>
+    <p class="timer-sub">remaining in your session</p>
+    <div class="prog-wrap"><div id="sessionProg" class="prog-bar"></div></div>
+    <button id="btnStop" class="btn btn-danger mt-12">■ &nbsp;End Session Early</button>
+    <p id="stopError" class="error-msg hidden"></p>
+  </div>
+
+  <!-- COOLDOWN VIEW -->
+  <div id="view-cooldown" class="phase-view hidden">
+    <div class="cooldown-icon">❄️</div>
+    <span class="phase-label-sm">Cooldown Active</span>
+    <div class="big-timer red-timer" id="cooldownTimer">--:--</div>
+    <p class="timer-sub">until sites are unblocked</p>
+    <div class="prog-wrap"><div id="cooldownProg" class="prog-bar prog-red"></div></div>
+    <div id="penaltyBanner" class="penalty-banner hidden">
+      ⚠️ Penalty time added for bypass attempts
+    </div>
+  </div>
+
+  <!-- ── SITES LIST (always visible) ──────────────────── -->
+  <div class="divider"></div>
+
+  <div class="sites-section">
+    <div class="sites-header">
+      <span class="section-label">Blocked Sites</span>
+      <span id="siteCount" class="site-count-badge">0</span>
+    </div>
+
+    <!-- YouTube is always blocked — show it as pinned -->
+    <div class="site-row pinned">
+      <div class="site-fav">
+        <img src="https://www.google.com/s2/favicons?domain=youtube.com&sz=16" alt="" />
+      </div>
+      <span class="site-domain">youtube.com <span class="always-tag">+ variants</span></span>
+      <span class="pinned-label">Always</span>
+    </div>
+
+    <div id="siteList"></div>
+
+    <div id="addSiteRow" class="add-row">
+      <input type="text" id="inpDomain" placeholder="e.g. reddit.com" autocomplete="off" />
+      <button id="btnAddSite" class="btn btn-add">+ Add</button>
+    </div>
+    <p id="addError" class="error-msg hidden"></p>
+  </div>
+
+  <!-- ── FOOTER ──────────────────────────────────────── -->
+  <footer class="footer">
+    <span>FocusShield v2.0</span>
+    <span id="footerMsg" class="footer-msg">Anti-cheat active</span>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>

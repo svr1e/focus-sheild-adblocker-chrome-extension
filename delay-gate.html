@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Delay Gate — FocusShield</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root { --violet: #8b5cf6; --cyan: #06b6d4; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Inter", sans-serif;
+      background: #0d0d16;
+      color: #f1f1f8;
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+
+    /* Ambient glow orbs */
+    body::before {
+      content: "";
+      position: fixed;
+      width: 500px; height: 500px;
+      background: rgba(139,92,246,0.09);
+      border-radius: 50%;
+      filter: blur(100px);
+      top: -100px; left: -100px;
+      animation: drift 8s ease-in-out infinite;
+    }
+    @keyframes drift { 0%,100%{transform:translate(0,0)} 50%{transform:translate(30px,20px)} }
+
+    .card {
+      position: relative; z-index: 1;
+      max-width: 440px; width: 90%;
+      padding: 44px 36px 36px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 24px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+      text-align: center;
+    }
+
+    /* Countdown ring */
+    .ring-wrap {
+      position: relative;
+      width: 110px; height: 110px;
+      margin: 0 auto 24px;
+    }
+    .ring-svg { transform: rotate(-90deg); }
+    .ring-bg { fill: none; stroke: rgba(255,255,255,0.07); stroke-width: 7; }
+    .ring-fill {
+      fill: none;
+      stroke: url(#ringGrad);
+      stroke-width: 7;
+      stroke-linecap: round;
+      stroke-dasharray: 307;
+      stroke-dashoffset: 0;
+      transition: stroke-dashoffset 1s linear;
+    }
+    .ring-number {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px; font-weight: 800;
+      background: linear-gradient(135deg, var(--violet), var(--cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.4px; margin-bottom: 8px; }
+
+    .site-visiting {
+      display: inline-block; margin-bottom: 10px;
+      padding: 4px 14px;
+      background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.3);
+      border-radius: 9999px; color: #a78bfa; font-size: 12px; font-weight: 700;
+    }
+
+    .sub {
+      font-size: 13px; color: #64748b; line-height: 1.7; margin-bottom: 22px;
+    }
+
+    .msg {
+      font-size: 12px; color: #475569; line-height: 1.6;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 10px;
+    }
+    .msg strong { color: #64748b; }
+
+    /* Progress bar */
+    .progress-wrap {
+      width: 100%; height: 4px;
+      background: rgba(255,255,255,0.07);
+      border-radius: 99px; overflow: hidden;
+      margin-bottom: 18px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--violet), var(--cyan));
+      border-radius: 99px;
+      width: 0%;
+      transition: width 1s linear;
+      box-shadow: 0 0 8px rgba(139,92,246,0.4);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+
+    <!-- Circular countdown ring -->
+    <div class="ring-wrap">
+      <svg class="ring-svg" width="110" height="110" viewBox="0 0 110 110">
+        <defs>
+          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%"   stop-color="#8b5cf6"/>
+            <stop offset="100%" stop-color="#06b6d4"/>
+          </linearGradient>
+        </defs>
+        <circle class="ring-bg"   cx="55" cy="55" r="49"/>
+        <circle class="ring-fill" cx="55" cy="55" r="49" id="ringFill"/>
+      </svg>
+      <div class="ring-number" id="ringNumber">10</div>
+    </div>
+
+    <h1>Hold On a Moment ✋</h1>
+
+    <div class="site-visiting" id="siteEl">🌐 Loading...</div>
+
+    <p class="sub">
+      This 10-second pause is intentional.<br/>
+      Use it to ask yourself: <em>"Do I really need this right now?"</em>
+    </p>
+
+    <div class="progress-wrap">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <div class="msg">
+      <strong>Tip:</strong> Starting a <strong>Focus Session</strong> in the FocusShield popup
+      gives you a structured timer with streak rewards instead of this gate.
+    </div>
+
+  </div>
+
+  <script>
+    // ── READ URL PARAMS ─────────────────────────────────────
+    const params = new URLSearchParams(location.search);
+    const site  = params.get("site")  || "this site";
+    const next  = params.get("next")  || "";
+    const tabId = params.get("tabId") || "";
+
+    document.getElementById("siteEl").textContent = "🌐 " + decodeURIComponent(site);
+
+    // ── COUNTDOWN ─────────────────────────────────────────
+    const TOTAL = 10;
+    const CIRCUMFERENCE = 2 * Math.PI * 49; // ≈ 307.9
+    const ringFill    = document.getElementById("ringFill");
+    const ringNumber  = document.getElementById("ringNumber");
+    const progressFill= document.getElementById("progressFill");
+
+    // Initialize ring (full, will drain)
+    ringFill.style.strokeDasharray  = CIRCUMFERENCE;
+    ringFill.style.strokeDashoffset = 0;
+
+    let count = TOTAL;
+
+    // Let CSS transition handle first frame after a brief delay
+    setTimeout(() => {
+      ringFill.style.strokeDashoffset = CIRCUMFERENCE; // drain to 0
+      progressFill.style.width = "100%";
+    }, 50);
+
+    const interval = setInterval(() => {
+      count--;
+      ringNumber.textContent = count;
+
+      // Update ring (re-fill proportionally as count goes down)
+      const filled = ((TOTAL - count) / TOTAL) * CIRCUMFERENCE;
+      ringFill.style.strokeDashoffset = filled;
+      progressFill.style.width = `${(count / TOTAL) * 100}%`;
+
+      if (count <= 0) {
+        clearInterval(interval);
+        done();
+      }
+    }, 1000);
+
+    // ── COMPLETION ─────────────────────────────────────────
+    async function done() {
+      // Tell background service worker this tab is approved
+      try {
+        await chrome.runtime.sendMessage({
+          action: "delayGateApproved",
+          tabId:  parseInt(tabId) || null,
+        });
+      } catch (e) {
+        // Service worker may have been killed — proceed anyway
+        console.log("[FocusShield] SW not reachable, proceeding to site.");
+      }
+
+      // Navigate to the original destination
+      if (next) {
+        window.location.href = decodeURIComponent(next);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Site Blocked — FocusShield</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root { --accent: #8b5cf6; --red: #ef4444; --orange: #f59e0b; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Inter", sans-serif;
+      background: #0d0d16;
+      color: #f1f1f8;
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+
+    /* Ambient orbs */
+    body::before, body::after {
+      content: "";
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(110px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    body::before {
+      width: 500px; height: 500px;
+      background: rgba(139,92,246,0.10);
+      top: -120px; left: -120px;
+      animation: drift1 9s ease-in-out infinite;
+    }
+    body::after {
+      width: 420px; height: 420px;
+      background: rgba(239,68,68,0.07);
+      bottom: -100px; right: -100px;
+      animation: drift2 11s ease-in-out infinite;
+    }
+    @keyframes drift1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,30px)} }
+    @keyframes drift2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,-25px)} }
+
+    .card {
+      position: relative; z-index: 1;
+      max-width: 500px; width: 90%;
+      padding: 44px 36px 36px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 24px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+      text-align: center;
+    }
+
+    .shield { font-size: 60px; display: block; margin-bottom: 14px;
+      filter: drop-shadow(0 0 20px rgba(139,92,246,0.6));
+      animation: breathe 3s ease-in-out infinite; }
+    @keyframes breathe { 0%,100%{transform:scale(1)} 50%{transform:scale(1.07)} }
+
+    h1 {
+      font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 6px;
+      background: linear-gradient(135deg, #fca5a5, #ef4444);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+
+    .sub { font-size: 14px; color: #94a3b8; line-height: 1.6; margin-bottom: 20px; }
+
+    .site-tag {
+      display: inline-block; padding: 5px 16px;
+      background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.25);
+      border-radius: 9999px; color: #fca5a5; font-size: 13px; font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    /* Cooldown timer */
+    .cooldown-box {
+      background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 14px; padding: 16px 22px; margin-bottom: 20px;
+    }
+    .cooldown-label { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
+    .cooldown-timer { font-size: 32px; font-weight: 800; letter-spacing: -1px;
+      background: linear-gradient(135deg, #fca5a5, #f59e0b);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+
+    .quote-box {
+      background: rgba(139,92,246,0.07); border: 1px solid rgba(139,92,246,0.2);
+      border-radius: 12px; padding: 14px 18px; margin-bottom: 18px;
+    }
+    .quote { font-size: 13px; font-style: italic; color: #a78bfa; line-height: 1.6; }
+
+    .hint { font-size: 11px; color: #475569; line-height: 1.7; }
+    .hint strong { color: #64748b; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <span class="shield">🛡️</span>
+    <h1>Access Blocked</h1>
+    <p class="sub">FocusShield has blocked this site.<br/>Take a break — you earned it.</p>
+
+    <div class="site-tag" id="siteTag">🚫 Blocked</div>
+
+    <div class="cooldown-box" id="cooldownBox">
+      <div class="cooldown-label">⏳ Cooldown Remaining</div>
+      <div class="cooldown-timer" id="timerDisplay">--:--</div>
+    </div>
+
+    <div class="quote-box">
+      <p class="quote" id="quoteEl"></p>
+    </div>
+
+    <p class="hint">
+      <strong>Cooldown is active.</strong> This site will unblock automatically.<br/>
+      Trying to open it repeatedly adds <strong>penalty time</strong>.
+    </p>
+  </div>
+
+  <script>
+    // Show blocked site name from URL params (set by tab monitor redirect)
+    const params = new URLSearchParams(location.search);
+    const site     = params.get("site")     || "";
+    const cooldown = parseInt(params.get("cooldown") || "0", 10); // minutes passed by tab monitor
+
+    if (site) document.getElementById("siteTag").textContent = "🚫 " + site;
+
+    // Live countdown — reads from storage for accuracy
+    function tick() {
+      chrome.storage.local.get(["cooldownEndTime"], ({ cooldownEndTime }) => {
+        if (!cooldownEndTime) { document.getElementById("timerDisplay").textContent = "--:--"; return; }
+        const leftMs = Math.max(0, cooldownEndTime - Date.now());
+        const m = Math.floor(leftMs / 60000);
+        const s = Math.floor((leftMs % 60000) / 1000);
+        document.getElementById("timerDisplay").textContent =
+          String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
+        if (leftMs === 0) clearInterval(iv);
+      });
+    }
+    const iv = setInterval(tick, 1000);
+    tick();
+
+    // Motivational quotes
+    const quotes = [
+      "Deep work is the ability to focus on a hard task — Cal Newport",
+      "The secret of getting ahead is getting started — Mark Twain",
+      "Focus on being productive instead of busy — Tim Ferriss",
+      "Energy flows where attention goes — Michael Beckwith",
+      "Distraction is the enemy of depth — Cal Newport",
+      "You don't have to see the whole staircase, just take the first step — MLK",
+    ];
+    document.getElementById("quoteEl").textContent =
+      '"' + quotes[Math.floor(Math.random() * quotes.length)] + '"';
+  </script>
+</body>
+</html>
